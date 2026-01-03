@@ -49,14 +49,14 @@ export default function NotesClient({ slug }: Props) {
     queryFn: () =>
       fetchNotes({
         page,
-        perPage: 20,
+        perPage: 12,
         search: debouncedSearch,
         tag,
       }),
   });
 
-  const notes = data ?? [];
-  const totalPages = notes.length === 12 ? page + 1 : page;
+  const notes = data?.notes ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   const handlePageChange = (nextPage: number) => {
     setPageByTag((prev) => ({ ...prev, [rawTag]: nextPage }));

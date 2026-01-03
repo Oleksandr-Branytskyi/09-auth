@@ -1,18 +1,23 @@
 import { api } from "./api";
-import type { Note } from "../../types/note";
+import type { Note, NoteTag } from "../../types/note";
 import type { User } from "../../types/user";
 
 export interface FetchNotesParams {
   search?: string;
-  page?: number;
-  perPage?: number;
-  tag?: string;
+  page: number;
+  perPage: number;
+  tag?: NoteTag;
+}
+
+export interface FetchNotesResponse {
+  notes: Note[];
+  totalPages: number;
 }
 
 export interface CreateNotePayload {
   title: string;
   content: string;
-  tag: string;
+  tag: NoteTag;
 }
 
 export interface AuthCredentials {
@@ -24,8 +29,10 @@ export interface UpdateMePayload {
   username: string;
 }
 
-export const fetchNotes = async (params: FetchNotesParams): Promise<Note[]> => {
-  const { data } = await api.get<Note[]>("/notes", { params });
+export const fetchNotes = async (
+  params: FetchNotesParams
+): Promise<FetchNotesResponse> => {
+  const { data } = await api.get<FetchNotesResponse>("/notes", { params });
   return data;
 };
 

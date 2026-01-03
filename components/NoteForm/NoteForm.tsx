@@ -57,9 +57,7 @@ export default function NoteForm() {
       await mutation.mutateAsync(draft);
       clearDraft();
       router.back();
-    } catch {
-      // handled below
-    }
+    } catch {}
   };
 
   const handleCancel = () => {
