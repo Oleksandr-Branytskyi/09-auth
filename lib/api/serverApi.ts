@@ -1,3 +1,4 @@
+import type { AxiosResponse } from "axios";
 import { api } from "./api";
 import type { Note } from "../../types/note";
 import type { User } from "../../types/user";
@@ -37,10 +38,12 @@ export const getMe = async (cookie?: string): Promise<User> => {
   return data;
 };
 
-export const checkSession = async (cookie?: string): Promise<User | null> => {
-  const { data } = await api.get<User | null>(
+export const checkSession = async (
+  cookie?: string
+): Promise<AxiosResponse<User | null>> => {
+  const response = await api.get<User | null>(
     "/auth/session",
     withCookie(cookie)
   );
-  return data ?? null;
+  return response;
 };

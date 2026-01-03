@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { checkSession } from "./lib/api/serverApi";
 
 const PRIVATE_PREFIXES = ["/profile", "/notes"];
 const AUTH_ROUTES = ["/sign-in", "/sign-up"];
@@ -11,20 +12,48 @@ function isAuthPath(pathname: string) {
   return AUTH_ROUTES.some((route) => pathname.startsWith(route));
 }
 
-async function hasActiveSession(request: NextRequest): Promise<boolean> {
-  const cookie = request.headers.get("cookie") ?? "";
+function getTokens(request: NextRequest) {
+  const accessToken = request.cookies.get("accessToken")?.value ?? null;
+  const refreshToken = request.cookies.get("refreshToken")?.value ?? null;
+  return { accessToken, refreshToken };
+}
 
-  const response = await fetch(new URL("/api/auth/session", request.url), {
-    method: "GET",
-    headers: {
-      cookie,
-    },
-  });
+function applySetCookieHeaders(
+  res: NextResponse,
+  setCookie?: string[] | string
+) {
+  if (!setCookie) return;
 
-  if (!response.ok) return false;
+  if (Array.isArray(setCookie)) {
+    for (const cookie of setCookie) res.headers.append("set-cookie", cookie);
+    return;
+  }
 
-  const text = await response.text();
-  return Boolean(text && text.trim().length > 0);
+  res.headers.append("set-cookie", setCookie);
+}
+
+async function getAuthState(request: NextRequest): Promise<{
+  isAuthenticated: boolean;
+  setCookie?: string[] | string;
+}> {
+  const { accessToken, refreshToken } = getTokens(request);
+
+  if (accessToken) {
+    return { isAuthenticated: true };
+  }
+
+  if (refreshToken) {
+    const cookieHeader = request.headers.get("cookie") ?? "";
+    const response = await checkSession(cookieHeader);
+
+    const setCookie = (
+      response.headers as unknown as { "set-cookie"?: string[] | string }
+    )["set-cookie"];
+
+    return { isAuthenticated: Boolean(response.data), setCookie };
+  }
+
+  return { isAuthenticated: false };
 }
 
 export async function proxy(request: NextRequest) {
@@ -37,21 +66,27 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isAuthenticated = await hasActiveSession(request);
+  const { isAuthenticated, setCookie } = await getAuthState(request);
 
   if (!isAuthenticated && isPrivate) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";
-    return NextResponse.redirect(url);
+    const res = NextResponse.redirect(url);
+    applySetCookieHeaders(res, setCookie);
+    return res;
   }
 
   if (isAuthenticated && isAuth) {
     const url = request.nextUrl.clone();
-    url.pathname = "/profile";
-    return NextResponse.redirect(url);
+    url.pathname = "/";
+    const res = NextResponse.redirect(url);
+    applySetCookieHeaders(res, setCookie);
+    return res;
   }
 
-  return NextResponse.next();
+  const res = NextResponse.next();
+  applySetCookieHeaders(res, setCookie);
+  return res;
 }
 
 export const config = {

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import css from "./EditProfilePage.module.css";
@@ -11,12 +11,11 @@ import { useAuthStore } from "@/lib/store/authStore";
 
 export default function EditProfilePage() {
   const router = useRouter();
-
   const setUser = useAuthStore((state) => state.setUser);
 
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("user_email@example.com");
-  const [avatar, setAvatar] = useState("avatar");
+  const [email, setEmail] = useState("");
+  const [avatar, setAvatar] = useState<string>("");
 
   useEffect(() => {
     async function load() {
@@ -30,10 +29,9 @@ export default function EditProfilePage() {
     load();
   }, [setUser]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const updatedUser = await updateMe({ username });
+  const updateAction = async (formData: FormData) => {
+    const nextUsername = String(formData.get("username") ?? "");
+    const updatedUser = await updateMe({ username: nextUsername });
     setUser(updatedUser);
     router.push("/profile");
   };
@@ -47,19 +45,22 @@ export default function EditProfilePage() {
       <div className={css.profileCard}>
         <h1 className={css.formTitle}>Edit Profile</h1>
 
-        <Image
-          src={avatar}
-          alt="User Avatar"
-          width={120}
-          height={120}
-          className={css.avatar}
-        />
+        {avatar ? (
+          <Image
+            src={avatar}
+            alt="User Avatar"
+            width={120}
+            height={120}
+            className={css.avatar}
+          />
+        ) : null}
 
-        <form className={css.profileInfo} onSubmit={handleSubmit}>
+        <form className={css.profileInfo} action={updateAction}>
           <div className={css.usernameWrapper}>
             <label htmlFor="username">Username:</label>
             <input
               id="username"
+              name="username"
               type="text"
               className={css.input}
               value={username}
@@ -67,7 +68,16 @@ export default function EditProfilePage() {
             />
           </div>
 
-          <p>Email: {email}</p>
+          <div className={css.usernameWrapper}>
+            <label htmlFor="email">Email:</label>
+            <input
+              id="email"
+              type="email"
+              className={css.input}
+              value={email}
+              readOnly
+            />
+          </div>
 
           <div className={css.actions}>
             <button type="submit" className={css.saveButton}>
