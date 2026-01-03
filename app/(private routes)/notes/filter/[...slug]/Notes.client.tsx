@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 
 import type { NoteTag } from "@/types/note";
-import { fetchNotes } from "@/lib/api";
+import { fetchNotes } from "@/lib/api/clientApi";
 
 import NoteList from "@/components/NoteList/NoteList";
 import SearchBox from "@/components/SearchBox/SearchBox";
@@ -55,8 +55,8 @@ export default function NotesClient({ slug }: Props) {
       }),
   });
 
-  const notes = data?.notes ?? [];
-  const totalPages = data?.totalPages ?? 1;
+  const notes = data ?? [];
+  const totalPages = notes.length === 12 ? page + 1 : page;
 
   const handlePageChange = (nextPage: number) => {
     setPageByTag((prev) => ({ ...prev, [rawTag]: nextPage }));
